@@ -1,6 +1,7 @@
 build/
 fw/
 node_modules/
+.venv/
 .parcel-cache/
 extra/
 src/tools_vfs/lib/python_minifier/

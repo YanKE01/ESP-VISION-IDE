@@ -36,6 +36,32 @@
 [Documentation](./docs/)  
 [Discussion](https://github.com/orgs/micropython/discussions/15219)  
 
+## Local development
+
+Install JavaScript dependencies:
+
+```sh
+npm ci
+```
+
+Build the static site. Python dependencies for `build.py` are managed by uv:
+
+```sh
+uv run build.py
+```
+
+Serve the generated `build/` directory:
+
+```sh
+uv run python -m http.server 8000 -d build
+```
+
+For Rollup watch mode after the first build:
+
+```sh
+npm start
+```
+
 ## Used software
 
 - [CodeMirror](https://codemirror.net) - Main code editor, MIT
