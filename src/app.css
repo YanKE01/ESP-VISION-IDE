@@ -186,6 +186,156 @@
     white-space: nowrap;
 }
 
+/* Floating tool panels (QR, AprilTag) */
+.tool-panel {
+    position: fixed;
+    top: 80px;
+    left: 80px;
+    z-index: 2000;
+    width: 300px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tool-panel.hidden {
+    display: none;
+}
+
+.tool-panel .tool-drag {
+    cursor: move;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* QR code generator tool */
+#qr-input {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--fg-color);
+    background: var(--bg-color-edit);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 8px;
+    outline: none;
+}
+
+#qr-input:focus {
+    border-color: var(--accent);
+}
+
+.qr-output {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    background: var(--bg-color-edit);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 14px;
+}
+
+#qr-empty {
+    opacity: 0.4;
+    font-size: 0.85rem;
+}
+
+#qr-canvas {
+    max-width: 100%;
+    max-height: 280px;
+    image-rendering: pixelated;
+    border-radius: 3px;
+}
+
+/* AprilTag generator tool */
+.at-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.at-controls label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+#at-family {
+    flex: 1;
+    color: var(--fg-color);
+    background: var(--bg-color-edit);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 5px 6px;
+    outline: none;
+}
+
+.at-id-group {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.at-id-group button {
+    width: 26px;
+    background: var(--bg-color-hover);
+    color: var(--fg-color);
+    font-size: 1rem;
+    line-height: 1;
+}
+
+#at-id {
+    width: 64px;
+    text-align: center;
+    color: var(--fg-color);
+    background: var(--bg-color-edit);
+    border: none;
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    outline: none;
+    padding: 5px 4px;
+    font-family: monospace;
+}
+
+.at-range {
+    opacity: 0.5;
+    font-size: 0.78rem;
+}
+
+.at-output {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    background: var(--bg-color-edit);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 14px;
+}
+
+#at-canvas {
+    max-width: 100%;
+    max-height: 260px;
+    image-rendering: pixelated;
+    border-radius: 3px;
+}
+
+.at-caption {
+    opacity: 0.6;
+    font-size: 0.8rem;
+    font-family: monospace;
+}
+
 body {
     display: flex;
     flex-direction: column;

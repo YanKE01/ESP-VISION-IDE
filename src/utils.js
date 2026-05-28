@@ -182,6 +182,52 @@ const iOS = /(iPad|iPhone|iPod)/g.test(navigator.userAgent)
 
 export { addCss, getCssPropertyValue, QSA, QS, QID, iOS }
 
+// Returns a pointer-down handler that lets a fixed-position panel be dragged
+// by its header. Position is clamped to the viewport. Clicks on a <button>
+// inside the handle (e.g. the close button) are ignored.
+export function makePanelDrag(panelId) {
+    let offX = 0
+    let offY = 0
+    function move(ev) {
+        const panel = QID(panelId)
+        const cx = ev.touches ? ev.touches[0].clientX : ev.clientX
+        const cy = ev.touches ? ev.touches[0].clientY : ev.clientY
+        const maxLeft = window.innerWidth - panel.offsetWidth
+        const maxTop = window.innerHeight - panel.offsetHeight
+        panel.style.left = Math.max(0, Math.min(cx - offX, maxLeft)) + 'px'
+        panel.style.top = Math.max(0, Math.min(cy - offY, maxTop)) + 'px'
+    }
+    function end() {
+        document.documentElement.removeEventListener('mousemove', move)
+        document.documentElement.removeEventListener('touchmove', move)
+        document.documentElement.removeEventListener('mouseup', end)
+        document.documentElement.removeEventListener('touchend', end)
+    }
+    return function start(ev) {
+        if (ev.target.closest('button')) {
+            return
+        }
+        const rect = QID(panelId).getBoundingClientRect()
+        const cx = ev.touches ? ev.touches[0].clientX : ev.clientX
+        const cy = ev.touches ? ev.touches[0].clientY : ev.clientY
+        offX = cx - rect.left
+        offY = cy - rect.top
+        document.documentElement.addEventListener('mousemove', move)
+        document.documentElement.addEventListener('touchmove', move)
+        document.documentElement.addEventListener('mouseup', end)
+        document.documentElement.addEventListener('touchend', end)
+    }
+}
+
+// Centers a fixed panel near the top on first open, remembering its position.
+export function centerPanelOnce(panelId, top = 80) {
+    const panel = QID(panelId)
+    if (!panel.style.left) {
+        panel.style.left = Math.max(16, (window.innerWidth - panel.offsetWidth) / 2) + 'px'
+        panel.style.top = top + 'px'
+    }
+}
+
 export function sanitizeHTML(s) {
     //return '<pre>' + (new Option(s)).innerHTML + '</pre>'
     return (new Option(s)).innerHTML.replace(/(?:\r\n|\r|\n)/g, '<br>').replace(/ /g, '&nbsp;')

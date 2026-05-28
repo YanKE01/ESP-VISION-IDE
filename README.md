@@ -72,3 +72,5 @@ npm start
 - [mpy-cross](https://github.com/micropython/micropython/tree/master/mpy-cross) - Code validation, MIT
 - [mpy-tool](https://github.com/micropython/micropython/blob/master/tools/mpy-tool.py) - MPY bytecode disassembler - MIT
 - [python-minifier](https://github.com/dflook/python-minifier) - Code minifier, MIT
+- [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) - QR Code Generator tool, MIT
+- [AprilTag](https://github.com/AprilRobotics/apriltag) - Tag code tables for the AprilTag Generator tool, BSD-2-Clause (The Regents of the University of Michigan)

@@ -57,6 +57,8 @@
                 <div id="menu-tools-title">Tools</div>
                 <div id="menu-tools-list">
                     <div><a href="#" onclick="app.openLabTool();return false;"><i class="fa-solid fa-eye-dropper fa-fw"></i> Color Threshold (LAB)</a></div>
+                    <div><a href="#" onclick="app.openQrTool();return false;"><i class="fa-solid fa-qrcode fa-fw"></i> QR Code Generator</a></div>
+                    <div><a href="#" onclick="app.openAprilTagTool();return false;"><i class="fa-solid fa-table-cells fa-fw"></i> AprilTag Generator</a></div>
                 </div>
             </div>
             <div id="menu-settings" class="tab-content">
@@ -241,6 +243,55 @@
                     <a href="#" class="link" id="lab-copy" onclick="app.labCopy();return false;">Copy</a>
                     <a href="#" class="link" id="lab-reset" onclick="app.labReset();return false;">Reset</a>
                 </div>
+            </div>
+        </div>
+    </div>
+    <div id="qr-panel" class="tool-panel hidden">
+        <div class="modal-head tool-drag" onmousedown="app.initQrDrag(event)" ontouchstart="app.initQrDrag(event)">
+            <span><i class="fa-solid fa-qrcode fa-fw"></i> QR Code Generator</span>
+            <button title="Close" onclick="app.closeQrTool()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <textarea id="qr-input" rows="2" placeholder="Enter text or URL to encode..."></textarea>
+            <div class="qr-output">
+                <span id="qr-empty">Enter text above to generate a QR code</span>
+                <canvas id="qr-canvas" hidden></canvas>
+            </div>
+            <div class="space-between">
+                <a href="#" class="link" id="qr-download" onclick="app.qrDownload();return false;">Download PNG</a>
+            </div>
+        </div>
+    </div>
+    <div id="apriltag-panel" class="tool-panel hidden">
+        <div class="modal-head tool-drag" onmousedown="app.initAprilTagDrag(event)" ontouchstart="app.initAprilTagDrag(event)">
+            <span><i class="fa-solid fa-table-cells fa-fw"></i> AprilTag Generator</span>
+            <button title="Close" onclick="app.closeAprilTagTool()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="at-controls">
+                <label>Family
+                    <select id="at-family">
+                        <option value="tag36h11" selected>tag36h11</option>
+                        <option value="tag25h9">tag25h9</option>
+                        <option value="tag25h7">tag25h7</option>
+                        <option value="tag16h5">tag16h5</option>
+                    </select>
+                </label>
+                <label>ID
+                    <span class="at-id-group">
+                        <button id="at-prev" title="Previous">&minus;</button>
+                        <input id="at-id" type="number" min="0" value="0">
+                        <button id="at-next" title="Next">+</button>
+                    </span>
+                    <span class="at-range" id="at-range">0 – 586</span>
+                </label>
+            </div>
+            <div class="at-output">
+                <canvas id="at-canvas"></canvas>
+            </div>
+            <div class="space-between">
+                <span class="at-caption" id="at-caption"></span>
+                <a href="#" class="link" onclick="app.aprilTagDownload();return false;">Download PNG</a>
             </div>
         </div>
     </div>
