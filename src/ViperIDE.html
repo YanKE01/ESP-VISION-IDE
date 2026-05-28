@@ -40,10 +40,10 @@
             <div id="menu-files" class="tab-content active">
                 <div id="menu-file-title">File Manager</div>
                 <div id="menu-file-tree">
-                    <div><span class="folder name"><i class="fa-solid fa-folder fa-fw"></i> /</span></div>
-                    <div>
-                        <a href="#" class="name" onclick="app.connectDevice('usb');return false;">&emsp;🤔 <span id="no-files">no files</span></a>
-                        <a href="#" class="menu-action" onclick="app.connectDevice('usb');return false;"><i class="fa-solid fa-plug"></i></a>
+                    <div class="tree-row"><span class="folder name"><span class="caret-spacer"></span><i class="fa-solid fa-folder fa-fw"></i> /</span></div>
+                    <div class="tree-row">
+                        <a href="#" class="name" onclick="app.connectDevice('usb');return false;"><span class="caret-spacer"></span>🤔 <span id="no-files">no files</span></a>
+                        <a href="#" class="menu-action" title="Connect" onclick="app.connectDevice('usb');return false;"><i class="fa-solid fa-plug"></i></a>
                     </div>
                 </div>
             </div>
@@ -150,8 +150,24 @@
                         </div>
                     </div>
                     <div id="preview-content">
+                        <button title="Fit to panel / 1:1" id="preview-fit" onclick="app.togglePreviewFit()"><i class="fa-solid fa-expand"></i></button>
                         <img id="preview-image" alt="">
                         <div id="preview-placeholder">No preview</div>
+                    </div>
+                    <div id="preview-stats">
+                        <div id="preview-meta">&mdash;</div>
+                        <div class="channel">
+                            <div class="channel-label"><span class="ch-name"><i class="swatch r"></i>R</span><span class="channel-stats" id="stats-r"></span></div>
+                            <canvas class="hist" id="hist-r"></canvas>
+                        </div>
+                        <div class="channel">
+                            <div class="channel-label"><span class="ch-name"><i class="swatch g"></i>G</span><span class="channel-stats" id="stats-g"></span></div>
+                            <canvas class="hist" id="hist-g"></canvas>
+                        </div>
+                        <div class="channel">
+                            <div class="channel-label"><span class="ch-name"><i class="swatch b"></i>B</span><span class="channel-stats" id="stats-b"></span></div>
+                            <canvas class="hist" id="hist-b"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>

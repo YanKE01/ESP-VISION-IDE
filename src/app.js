@@ -226,6 +226,7 @@ export async function connectDevice(type) {
         clearPreview()
         QID('btn-run-icon').classList.replace('fa-circle-stop', 'fa-circle-play')
         isInRunMode = false
+        _resetFileTree()
         port = null
         //connectDevice(type)
     })
@@ -449,6 +450,16 @@ function _updateFileTree(fs_tree, fs_stats)
 
 }
 
+function _resetFileTree() {
+    QID('menu-file-tree').innerHTML = `<div class="tree-row">
+        <span class="folder name"><span class="caret-spacer"></span><i class="fa-solid fa-folder fa-fw"></i> /</span>
+    </div>
+    <div class="tree-row">
+        <a href="#" class="name" onclick="app.connectDevice('usb');return false;"><span class="caret-spacer"></span>🤔 <span id="no-files">no files</span></a>
+        <a href="#" class="menu-action" title="Connect" onclick="app.connectDevice('usb');return false;"><i class="fa-solid fa-plug"></i></a>
+    </div>`
+}
+
 async function _raw_updateFileTree(raw) {
     let fs_stats = [null, null, null];
     try {
@@ -464,6 +475,11 @@ async function _raw_updateFileTree(raw) {
 
 export function toggleFolder(rowEl) {
     rowEl.parentElement.classList.toggle('collapsed')
+}
+
+export function togglePreviewFit() {
+    const fit = QID('preview-panel').classList.toggle('fit')
+    QID('preview-fit').classList.toggle('active', fit)
 }
 
 export function fileTreeSelect(fn) {

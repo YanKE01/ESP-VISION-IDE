@@ -6,7 +6,7 @@
  * This includes no assurances about being fit for any specific purpose.
  */
 
-import { report } from "./utils"
+import { sleep } from "./utils"
 
 export class MpRawMode {
     constructor(port) {
@@ -25,35 +25,43 @@ export class MpRawMode {
         return res
     }
 
-    async interruptProgram(timeout=20000) {
-        const endTime = Date.now() + timeout
-        while (timeout <= 0 || (Date.now() < endTime)) {
-            await this.port.write('\x03')   // Ctrl-C: interrupt any running program
-            try {
-                let banner = await this.port.readUntil('>>> ', 500)
-                if (this.port.prevRecvCbk && banner != '\r\n>>> ') {
-                    this.port.prevRecvCbk(banner)
-                }
-                await this.port.flushInput()
-                return
-            } catch (err) {
-                report("Error", err)
-            }
+    async interruptProgram() {
+        // Repeated Ctrl-C covers user code stuck in long C calls (e.g. sensor.snapshot /
+        // skip_frames) and stops a running preview loop so it stops emitting EVFRAME data.
+        // Flushing clears any buffered frame bytes that would otherwise drown the handshake.
+        await this.port.flushInput()
+        for (let i = 0; i < 3; i++) {
+            await this.port.write('\x03')   // Ctrl-C: interrupt running program
+            await sleep(150)
         }
-        throw new Error('Board is not responding')
+        await this.port.flushInput()
     }
 
     async enterRawRepl(soft_reboot=false) {
         const release = await this.port.startTransaction()
         try {
-            await this.interruptProgram()
-
-            await this.port.write('\r\x01')       // Ctrl-A: enter raw REPL
-            await this.port.readUntil('raw REPL; CTRL-B to exit\r\n')
+            // A device streaming preview frames can flood the handshake, so interrupt +
+            // flush + probe repeatedly until the raw REPL banner appears. Match "raw REPL"
+            // partially (not the full line) to tolerate residual frame noise.
+            const deadline = Date.now() + 15000
+            let lastErr
+            for (;;) {
+                try {
+                    await this.interruptProgram()
+                    await this.port.write('\r\x01')              // Ctrl-A: enter raw REPL
+                    await this.port.readUntil('raw REPL', 3000)  // partial match; leaves the '>' prompt for exec()
+                    break
+                } catch (err) {
+                    lastErr = err
+                    if (Date.now() >= deadline) {
+                        throw lastErr
+                    }
+                }
+            }
 
             if (soft_reboot) {
                 await this.port.write('\x04\x03') // soft reboot in raw mode
-                await this.port.readUntil('raw REPL; CTRL-B to exit\r\n')
+                await this.port.readUntil('raw REPL', 3000)
             }
 
             this.end = async () => {
@@ -67,7 +75,6 @@ export class MpRawMode {
             }
         } catch (err) {
             release()
-            //report("Cannot enter RAW mode", err)
             throw err
         }
     }
