@@ -23,6 +23,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import { addUpdateHandler, createNewEditor, getEditorFromElement } from './editor.js'
 import { displayOpenFile, createTab } from './editor_tabs.js'
 import { EvframeParser, showPreviewFrame, clearPreview } from './preview.js'
+import { openLabTool, closeLabTool, labModalBackdrop, labCopy, labReset } from './color_threshold.js'
 import { serial as webSerialPolyfill } from 'web-serial-polyfill'
 import { WebSerial, WebBluetooth, WebSocketREPL, WebRTCTransport } from './transports.js'
 import { MpRawMode } from './rawmode.js'
@@ -45,7 +46,7 @@ import { faUsb, faBluetoothB } from '@fortawesome/free-brands-svg-icons'
 import { faLink, faBars, faDownload, faCirclePlay, faCircleStop, faFolder, faFile, faFileCircleExclamation, faCubes, faGear,
          faCube, faTools, faSliders, faCircleInfo, faStar, faExpand, faCertificate,
          faPlug, faArrowUpRightFromSquare, faTerminal, faBug, faGaugeHigh,
-         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark, faBook
+         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark, faBook, faEyeDropper, faCamera
        } from '@fortawesome/free-solid-svg-icons'
 import { faMessage, faCircleDown } from '@fortawesome/free-regular-svg-icons'
 
@@ -53,9 +54,11 @@ library.add(faUsb, faBluetoothB)
 library.add(faLink, faBars, faDownload, faCirclePlay, faCircleStop, faFolder, faFile, faFileCircleExclamation, faCubes, faGear,
          faCube, faTools, faSliders, faCircleInfo, faStar, faExpand, faCertificate,
          faPlug, faArrowUpRightFromSquare, faTerminal, faBug, faGaugeHigh,
-         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark, faBook)
+         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark, faBook, faEyeDropper, faCamera)
 library.add(faMessage, faCircleDown)
 dom.watch()
+
+export { openLabTool, closeLabTool, labModalBackdrop, labCopy, labReset }
 
 function getBuildDate() {
     return (new Date(VIPER_IDE_BUILD)).toISOString().substring(0, 19).replace('T',' ')

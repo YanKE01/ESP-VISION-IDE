@@ -29,6 +29,7 @@
                 <div>
                     <a class="tab active" data-target="menu-files"><i class="fa-solid fa-folder fa-fw"></i></a>
                     <a class="tab" data-target="menu-examples"><i class="fa-solid fa-book fa-fw"></i></a>
+                    <a class="tab" data-target="menu-tools"><i class="fa-solid fa-tools fa-fw"></i></a>
                 </div>
                 <div>
                     <a class="tab" data-target="menu-settings"><i class="fa-solid fa-sliders fa-fw"></i></a>
@@ -51,6 +52,12 @@
             <div id="menu-examples" class="tab-content">
                 <div id="menu-examples-title">Examples</div>
                 <div id="menu-examples-tree"></div>
+            </div>
+            <div id="menu-tools" class="tab-content">
+                <div id="menu-tools-title">Tools</div>
+                <div id="menu-tools-list">
+                    <div><a href="#" onclick="app.openLabTool();return false;"><i class="fa-solid fa-eye-dropper fa-fw"></i> Color Threshold (LAB)</a></div>
+                </div>
             </div>
             <div id="menu-settings" class="tab-content">
                 <div id="menu-settings-title">Settings</div>
@@ -194,6 +201,45 @@
                 </div>
                 <div id="logs" class="tab-content">
                     <!-- Logs content goes here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="lab-modal" class="modal hidden" onclick="app.labModalBackdrop(event)">
+        <div class="modal-box">
+            <div class="modal-head">
+                <span><i class="fa-solid fa-eye-dropper fa-fw"></i> Color Threshold (LAB)</span>
+                <button title="Close" onclick="app.closeLabTool()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="lab-toolbar">
+                    <button id="lab-capture" title="Capture current preview frame"><i class="fa-solid fa-camera fa-fw"></i> Capture from preview</button>
+                </div>
+                <div class="lab-frames">
+                    <figure><figcaption>Source</figcaption><div class="lab-frame-box"><img id="lab-source" alt=""><span id="lab-source-empty">No frame</span></div></figure>
+                    <figure><figcaption>Mask</figcaption><div class="lab-frame-box"><canvas id="lab-mask"></canvas></div></figure>
+                </div>
+                <div class="lab-controls">
+                    <div class="lab-row" data-channel="L">
+                        <div class="lab-label"><span>L</span><span class="lab-val" id="lab-val-L">0 – 100</span></div>
+                        <input type="range" data-bound="min" min="0" max="100" step="1" value="0">
+                        <input type="range" data-bound="max" min="0" max="100" step="1" value="100">
+                    </div>
+                    <div class="lab-row" data-channel="A">
+                        <div class="lab-label"><span>A</span><span class="lab-val" id="lab-val-A">-128 – 127</span></div>
+                        <input type="range" data-bound="min" min="-128" max="127" step="1" value="-128">
+                        <input type="range" data-bound="max" min="-128" max="127" step="1" value="127">
+                    </div>
+                    <div class="lab-row" data-channel="B">
+                        <div class="lab-label"><span>B</span><span class="lab-val" id="lab-val-B">-128 – 127</span></div>
+                        <input type="range" data-bound="min" min="-128" max="127" step="1" value="-128">
+                        <input type="range" data-bound="max" min="-128" max="127" step="1" value="127">
+                    </div>
+                </div>
+                <div class="lab-output">
+                    <code id="lab-tuple">(0, 100, -128, 127, -128, 127)</code>
+                    <a href="#" class="link" id="lab-copy" onclick="app.labCopy();return false;">Copy</a>
+                    <a href="#" class="link" id="lab-reset" onclick="app.labReset();return false;">Reset</a>
                 </div>
             </div>
         </div>
