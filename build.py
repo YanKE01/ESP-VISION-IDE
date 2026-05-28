@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, time
+import os, time, ast, re
 import json, glob, tarfile, requests
 from io import BytesIO
 from zipfile import ZipFile
@@ -35,6 +35,94 @@ def gen_examples(src, dst):
         return items
     with open(dst, 'w', encoding='utf-8') as f:
         json.dump(walk(src), f, separators=(',',':'), ensure_ascii=False)
+
+def gen_stubs(src, dst):
+    # Parse esp-vision .pyi stubs into completion data for the editor.
+    # Docs use Sphinx-style "#:" comments, so they are collected line-by-line
+    # and attached to the def/class/constant on the next code line.
+    def doc_map(lines):
+        docs, buf = {}, []
+        for i, raw in enumerate(lines):
+            s = raw.strip()
+            if s.startswith('#:'):
+                buf.append(s[2:].strip())
+            elif s == '':
+                buf = []
+            elif s.startswith('#'):
+                buf = []
+            else:
+                if buf:
+                    docs[i + 1] = ' '.join(x for x in buf if x).strip()
+                buf = []
+        return docs
+
+    def signature(lines, node, drop_self=False):
+        seg = lines[node.lineno - 1: node.end_lineno]
+        text = re.sub(r'\s+', ' ', ' '.join(p.strip() for p in seg)).strip()
+        if text.endswith('...'):
+            text = text[:-3].rstrip()
+        if text.endswith(':'):
+            text = text[:-1].rstrip()
+        if text.startswith('def '):
+            text = text[4:]
+        if drop_self:
+            text = re.sub(r'\(\s*self\b\s*,?\s*', '(', text, count=1)
+        text = re.sub(r',\s*\)', ')', text)
+        return text
+
+    def option(label, otype, detail, info):
+        opt = {'label': label, 'type': otype}
+        if detail:
+            opt['detail'] = detail
+        if info:
+            opt['info'] = info
+        return opt
+
+    modules, classes, ctors, ctor_sigs = {}, {}, {}, {}
+    for fn in sorted(glob.glob('*.pyi', root_dir=src)):
+        modname = fn[:-4]
+        text = readfile(os.path.join(src, fn))
+        lines = text.splitlines()
+        docs = doc_map(lines)
+        members = []
+        for node in ast.parse(text).body:
+            if isinstance(node, ast.FunctionDef):
+                members.append(option(node.name, 'function', signature(lines, node), docs.get(node.lineno)))
+            elif isinstance(node, ast.ClassDef):
+                base_names = [b.id for b in node.bases if isinstance(b, ast.Name)]
+                if 'TypedDict' in base_names or 'Protocol' in base_names:
+                    continue
+                cname = node.name
+                ctor_sig = cname + '(...)'
+                method_opts = []
+                for sub in node.body:
+                    if not isinstance(sub, ast.FunctionDef):
+                        continue
+                    if sub.name == '__init__':
+                        ctor_sig = re.sub(r'^__init__', cname, signature(lines, sub, drop_self=True))
+                    if sub.name.startswith('__'):
+                        continue
+                    method_opts.append(option(sub.name, 'method', signature(lines, sub, drop_self=True), docs.get(sub.lineno)))
+                classes[cname] = method_opts
+                ctor_sigs[cname] = ctor_sig
+                ctors[modname + '.' + cname] = cname
+                members.append(option(cname, 'class', ctor_sig, docs.get(node.lineno)))
+            elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is None:
+                raw = lines[node.lineno - 1].strip()
+                detail = raw.split(':', 1)[1].strip() if ':' in raw else ''
+                members.append(option(node.target.id, 'constant', detail, docs.get(node.lineno)))
+            elif isinstance(node, ast.Assign) and len(node.targets) == 1 \
+                    and isinstance(node.targets[0], ast.Name) and isinstance(node.value, ast.Name) \
+                    and node.value.id in classes:
+                name, target = node.targets[0].id, node.value.id
+                ctors[modname + '.' + name] = target
+                members.append(option(name, 'class', ctor_sigs.get(target, target + '(...)'),
+                                      docs.get(node.lineno) or ('Alias of ' + target)))
+        modules[modname] = {'members': members}
+
+    with open(dst, 'w', encoding='utf-8') as f:
+        json.dump({'modules': modules, 'classes': classes, 'ctors': ctors},
+                  f, separators=(',', ':'), ensure_ascii=False)
 
 def gen_manifest(src, dst):
     pkg = json.loads(readfile('package.json'))
@@ -100,6 +188,7 @@ if __name__ == "__main__":
     copytree("./assets", "./build/assets", dirs_exist_ok=True)
     gen_translations("./src/lang/", "build/translations.json")
     gen_examples("./examples", "build/examples.json")
+    gen_stubs("./stubs", "build/stubs.json")
     gen_manifest("./src/manifest.json", "build/manifest.json")
 
     download_and_extract("https://github.com/dflook/python-minifier/archive/refs/tags/3.1.1.zip",
