@@ -260,10 +260,60 @@ body.loaded {
     line-height: 1.2em;
 }
 
-#menu-file-tree div .name {
+#menu-file-tree .tree-row {
+    display: flex;
+    align-items: center;
+    margin: 3px 0;
+    line-height: 1.4em;
+}
+
+#menu-file-tree .tree-row .name {
+    flex: 1 1 auto;
+    min-width: 0;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
+}
+
+#menu-file-tree .tree-row .size {
+    flex: 0 0 auto;
+    margin-left: 8px;
+    font-size: 0.72rem;
+    opacity: 0.5;
+    white-space: nowrap;
+}
+
+#menu-file-tree .tree-row .menu-action {
+    flex: 0 0 auto;
+    float: none;
+    margin-left: 6px;
+    padding: 0;
+    opacity: 0.5;
+}
+
+#menu-file-tree .folder-row {
+    cursor: pointer;
+}
+
+#menu-file-tree .caret,
+#menu-file-tree .caret-spacer {
+    display: inline-block;
+    width: 0.9em;
+    text-align: center;
+}
+
+#menu-file-tree .folder-row .caret::before {
+    content: '\25be';
+    font-size: 0.85em;
+    opacity: 0.6;
+}
+
+#menu-file-tree .tree-folder.collapsed > .folder-row .caret::before {
+    content: '\25b8';
+}
+
+#menu-file-tree .tree-folder.collapsed > .tree-children {
+    display: none;
 }
 
 #menu-file-tree div .open::after {

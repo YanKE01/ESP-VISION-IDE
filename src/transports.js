@@ -22,6 +22,7 @@ export class Transport {
         this.writeChunk = 128
         this.emit = false
         this.info = {}
+        this.disconnected = false
     }
 
     async requestAccess() {
@@ -65,7 +66,10 @@ export class Transport {
     }
 
     onDisconnect(callback) {
-        this.disconnectCallback = callback
+        this.disconnectCallback = () => {
+            this.disconnected = true
+            callback()
+        }
     }
 
     /*
@@ -113,6 +117,9 @@ export class Transport {
         }
         let endTime = Date.now() + timeout
         while (timeout <= 0 || (Date.now() < endTime)) {
+            if (this.disconnected) {
+                throw new Error('Disconnected')
+            }
             if (this.receivedData.length >= n) {
                 const res = this.receivedData.substring(0, n)
                 this.receivedData = this.receivedData.substring(n)
@@ -133,6 +140,9 @@ export class Transport {
         }
         let endTime = Date.now() + timeout
         while (timeout <= 0 || (Date.now() < endTime)) {
+            if (this.disconnected) {
+                throw new Error('Disconnected')
+            }
             const idx = this.receivedData.indexOf(ending) + ending.length
             if (idx >= ending.length) {
                 const res = this.receivedData.substring(0, idx)
@@ -191,16 +201,23 @@ export class WebSerial extends Transport {
         this.writer = this.port.writable.getWriter()
 
         const processStream = async () => {
-            while (true) {
-                const { value, done } = await this.reader.read()
-                if (done) {
-                    this.reader.releaseLock()
-                    break
+            try {
+                while (true) {
+                    const { value, done } = await this.reader.read()
+                    if (done) {
+                        break
+                    }
+                    this.receiveCallback(value)
+                    this.activityCallback()
                 }
-                this.receiveCallback(value)
-                this.activityCallback()
+            } catch (_err) {
+                // Device unplugged or stream error: fall through to disconnect handling
+            } finally {
+                try {
+                    this.reader.releaseLock()
+                } catch (_e) { /* already released */ }
+                this.disconnectCallback()
             }
-            this.disconnectCallback()
         }
         processStream()
     }

@@ -22,6 +22,7 @@ import { FitAddon } from '@xterm/addon-fit'
 
 import { addUpdateHandler, createNewEditor, getEditorFromElement } from './editor.js'
 import { displayOpenFile, createTab } from './editor_tabs.js'
+import { EvframeParser, showPreviewFrame, clearPreview } from './preview.js'
 import { serial as webSerialPolyfill } from 'web-serial-polyfill'
 import { WebSerial, WebBluetooth, WebSocketREPL, WebRTCTransport } from './transports.js'
 import { MpRawMode } from './rawmode.js'
@@ -214,13 +215,17 @@ export async function connectDevice(type) {
 
     port.onActivity(indicateActivity)
 
+    const previewParser = new EvframeParser(showPreviewFrame)
     port.onReceive((data) => {
-        term.write(data)
+        term.write(previewParser.feed(data))
     })
 
     port.onDisconnect(() => {
         QID(`btn-conn-${type}`).classList.remove('connected')
         toastr.warning('Device disconnected')
+        clearPreview()
+        QID('btn-run-icon').classList.replace('fa-circle-stop', 'fa-circle-play')
+        isInRunMode = false
         port = null
         //connectDevice(type)
     })
@@ -365,8 +370,8 @@ function _updateFileTree(fs_tree, fs_stats)
             content.sort((a,b) => collator.compare(a.name, b.name))
         }
 
-        // Stable-sort folders first
-        content.sort((a,b) => (('content' in a)?0:1) - (('content' in b)?0:1))
+        // Stable-sort files first, folders (e.g. /sdcard) after
+        content.sort((a,b) => (('content' in a)?1:0) - (('content' in b)?1:0))
 
         return content
     }
@@ -380,54 +385,53 @@ function _updateFileTree(fs_tree, fs_stats)
         open_files.push(file.dataset.fn)
     })
 
-    // Traverse file tree
+    function fileIcon(n) {
+        const fnuc = n.name.toUpperCase()
+        if (fnuc.endsWith('.MPY')) {
+            return '<i class="fa-solid fa-cube fa-fw"></i>'
+        } else if (['.CRT', '.PEM', '.DER', '.CER', '.PFX', '.P12'].some(x => fnuc.endsWith(x))) {
+            return '<i class="fa-solid fa-certificate fa-fw"></i>'
+        } else if (fnuc === '???') {
+            return '<i class="fa-solid fa-file-circle-exclamation fa-fw"></i>'
+        }
+        return '<i class="fa-solid fa-file fa-fw"></i>'
+    }
+
+    function renderNode(n, depth) {
+        const pad = `padding-left:${depth * 1.2}em`
+        if ('content' in n) {
+            const children = sorted(n.content).map(c => renderNode(c, depth + 1)).join('')
+            return `<div class="tree-folder">
+                <div class="tree-row folder-row" style="${pad}" onclick="app.toggleFolder(this)">
+                    <span class="folder name"><span class="caret"></span><i class="fa-solid fa-folder fa-fw"></i> ${n.name}</span>
+                    <a href="#" class="menu-action" title="Create" onclick="event.stopPropagation();app.createNewFile('${n.path}/');return false;"><i class="fa-solid fa-plus fa-fw"></i></a>
+                    <a href="#" class="menu-action" title="Remove" onclick="event.stopPropagation();app.removeDir('${n.path}');return false;"><i class="fa-solid fa-xmark fa-fw"></i></a>
+                </div>
+                <div class="tree-children">${children}</div>
+            </div>`
+        }
+        if (n.path.startsWith("/proc/") || n.path.startsWith("/dev/")) {
+            return `<div class="tree-row" style="${pad}">
+                <span class="name"><span class="caret-spacer"></span><i class="fa-solid fa-gear fa-fw"></i> ${n.name}</span>
+            </div>`
+        }
+        const sel = ([editorFn, `/${editorFn}`, `/flash/${editorFn}`].includes(n.path)) ? 'selected' : ''
+        return `<div class="tree-row" style="${pad}">
+            <a href="#" class="name ${sel}" data-fn="${n.path}" onclick="app.fileClick('${n.path}');return false;"><span class="caret-spacer"></span>${fileIcon(n)} ${n.name}</a>
+            <span class="size">${sizeFmt(n.size)}</span>
+            <a href="#" class="menu-action" title="Remove" onclick="event.stopPropagation();app.removeFile('${n.path}');return false;"><i class="fa-solid fa-xmark fa-fw"></i></a>
+        </div>`
+    }
+
     const fileTree = QID('menu-file-tree')
-    fileTree.innerHTML = `<div>
-        <span class="folder name"><i class="fa-solid fa-folder fa-fw"></i> /</span>
+    let html = `<div class="tree-row">
+        <span class="folder name"><span class="caret-spacer"></span><i class="fa-solid fa-folder fa-fw"></i> /</span>
+        <span class="size">${T('files.used')} ${sizeFmt(fs_used,0)} / ${sizeFmt(fs_size,0)}</span>
         <a href="#" class="menu-action" title="Refresh" onclick="app.refreshFileTree();return false;"><i class="fa-solid fa-arrows-rotate fa-fw"></i></a>
         <a href="#" class="menu-action" title="Create" onclick="app.createNewFile('/');return false;"><i class="fa-solid fa-plus fa-fw"></i></a>
-        <span class="menu-action">${T('files.used')} ${sizeFmt(fs_used,0)} / ${sizeFmt(fs_size,0)}</span>
     </div>`
-    function traverse(node, depth) {
-        const offset = '&emsp;'.repeat(depth)
-        for (const n of sorted(node)) {
-            if ('content' in n) {
-                fileTree.insertAdjacentHTML('beforeend', `<div>
-                    ${offset}<span class="folder name"><i class="fa-solid fa-folder fa-fw"></i> ${n.name}</span>
-                    <a href="#" class="menu-action" title="Remove" onclick="app.removeDir('${n.path}');return false;"><i class="fa-solid fa-xmark fa-fw"></i></a>
-                    <a href="#" class="menu-action" title="Create" onclick="app.createNewFile('${n.path}/');return false;"><i class="fa-solid fa-plus fa-fw"></i></a>
-                </div>`)
-                traverse(n.content, depth+1)
-            } else {
-                /* TODO ••• */
-                let icon;
-                const fnuc = n.name.toUpperCase();
-                if (fnuc.endsWith('.MPY')) {
-                    icon = '<i class="fa-solid fa-cube fa-fw"></i>'
-                } else if (['.CRT', '.PEM', '.DER', '.CER', '.PFX', '.P12'].some(x => fnuc.endsWith(x))) {
-                    icon = '<i class="fa-solid fa-certificate fa-fw"></i>'
-                } else if (fnuc === '???') {
-                    icon = '<i class="fa-solid fa-file-circle-exclamation fa-fw"></i>'
-                } else {
-                    icon = '<i class="fa-solid fa-file fa-fw"></i>'
-                }
-                let sel = ([editorFn, `/${editorFn}`, `/flash/${editorFn}`].includes(n.path)) ? 'selected' : ''
-                if (n.path.startsWith("/proc/") || n.path.startsWith("/dev/")) {
-                    icon = '<i class="fa-solid fa-gear fa-fw"></i>'
-                    fileTree.insertAdjacentHTML('beforeend', `<div>
-                        ${offset}<span>${icon} ${n.name}&nbsp;</span>
-                    </div>`)
-                } else {
-                    fileTree.insertAdjacentHTML('beforeend', `<div>
-                        ${offset}<a href="#" class="name ${sel}" data-fn="${n.path}" onclick="app.fileClick('${n.path}');return false;">${icon} ${n.name}&nbsp;</a>
-                        <a href="#" class="menu-action" title="Remove" onclick="app.removeFile('${n.path}');return false;"><i class="fa-solid fa-xmark fa-fw"></i></a>
-                        <span class="menu-action">${sizeFmt(n.size)}</span>
-                    </div>`)
-                }
-            }
-        }
-    }
-    traverse(fs_tree, 1)
+    html += sorted(fs_tree).map(n => renderNode(n, 1)).join('')
+    fileTree.innerHTML = html
 
     for (let fn of changed_files) {
         QS(`#menu-file-tree [data-fn="${fn}"]`).classList.add("changed")
@@ -437,9 +441,9 @@ function _updateFileTree(fs_tree, fs_stats)
     }
 
     if (QID('advanced-mode').checked) {
-        fileTree.insertAdjacentHTML('beforeend', `<div>
-            <a href="#" class="name" onclick="app.fileClick('~sysinfo.md');return false;"><i class="fa-regular fa-message fa-fw"></i> sysinfo.md&nbsp;</a>
-            <span class="menu-action">virtual</span>
+        fileTree.insertAdjacentHTML('beforeend', `<div class="tree-row">
+            <a href="#" class="name" onclick="app.fileClick('~sysinfo.md');return false;"><i class="fa-regular fa-message fa-fw"></i> sysinfo.md</a>
+            <span class="size">virtual</span>
         </div>`)
     }
 
@@ -458,6 +462,10 @@ async function _raw_updateFileTree(raw) {
     _updateFileTree(fs_tree, fs_stats);
 }
 
+export function toggleFolder(rowEl) {
+    rowEl.parentElement.classList.toggle('collapsed')
+}
+
 export function fileTreeSelect(fn) {
     for (const el of document.getElementsByClassName('name')) {
         el.classList.remove('selected')
@@ -472,6 +480,11 @@ export function fileTreeSelect(fn) {
 
 export async function fileClick(fn) {
     if (!port) return;
+
+    if (fn !== '~sysinfo.md' && !fn.endsWith('.py')) {
+        toastr.info('Only Python (.py) files can be opened')
+        return
+    }
 
     const raw = await MpRawMode.begin(port)
     try {
@@ -678,8 +691,12 @@ export async function runCurrentFile() {
             return
         }
     } finally {
-        port.emit = false
-        await raw.end()
+        if (port) {
+            port.emit = false
+            try {
+                await raw.end()
+            } catch (_err) { /* device may be gone */ }
+        }
         QID('btn-run-icon').classList.replace('fa-circle-stop', 'fa-circle-play')
         isInRunMode = false
         term.write('\r\n>>> ')
