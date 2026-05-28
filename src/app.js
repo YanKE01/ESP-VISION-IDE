@@ -80,9 +80,7 @@ async function disconnectDevice() {
         port = null
     }
 
-    for (const t of ['ws', 'ble', 'usb']) {
-        QID(`btn-conn-${t}`).classList.remove('connected')
-    }
+    QID('btn-conn-usb').classList.remove('connected')
 }
 
 let defaultWsURL = 'ws://192.168.1.123:8266'
@@ -896,8 +894,6 @@ export function applyTranslation() {
         }
         QID('btn-save').setAttribute('title',     T('tool.save') + ` [${metaKey}+S]`)
         QID('btn-run').setAttribute('title',      T('tool.run') + ' [F5]')
-        QID('btn-conn-ws').setAttribute('title',  T('tool.conn.ws'))
-        QID('btn-conn-ble').setAttribute('title', T('tool.conn.ble'))
         QID('btn-conn-usb').setAttribute('title', T('tool.conn.usb'))
         QID('term-clear').setAttribute('title',   T('tool.clear'))
         QID('tab-term').innerText = T('tool.terminal')
@@ -907,7 +903,6 @@ export function applyTranslation() {
         })
 
         QS('#menu-file-title').innerText = T('menu.file-mgr')
-        QS('#menu-pkg-title').innerText = T('menu.package-mgr')
         QS('#menu-settings-title').innerText = T('menu.settings')
 
         try {
@@ -1058,8 +1053,7 @@ export function applyTranslation() {
 
     const fn = 'test.py'
     const content = `
-# ViperIDE - MicroPython Web IDE
-# Read more: https://github.com/vshymanskyy/ViperIDE
+# ESP-VISION-IDE - ESP-VISION MicroPython Web IDE
 
 # Connect your device and start creating! 🤖👨‍💻🕹️
 
@@ -1192,11 +1186,6 @@ export function applyTranslation() {
         toastr.info('Warning: your files may be overwritten!', `Connect your board to install ${urlID}`)
     }
 
-    if (typeof webrepl_url !== 'undefined') {
-        await sleep(100)
-        await connectDevice('ws')
-    }
-
 })();
 
 /*
@@ -1223,7 +1212,7 @@ async function checkForUpdates() {
         return
     }
     if (current_version.localeCompare(manifest.version, undefined, {numeric: true, sensitivity: "base"}) < 0) {
-        toastr.info(`New ViperIDE version ${manifest.version} is available`)
+        toastr.info(`New ESP-VISION-IDE version ${manifest.version} is available`)
         QID('viper-ide-version').innerHTML = `${current_version} (<a href="javascript:app.updateApp()">update</a>)`
 
         // Automatically show about page
@@ -1291,4 +1280,41 @@ function stopDrag() {
     document.documentElement.removeEventListener('touchmove', doDrag, false)
     document.documentElement.removeEventListener('mouseup', stopDrag, false)
     document.documentElement.removeEventListener('touchend', stopDrag, false)
+}
+
+let startX, startWidth
+
+export function initPreviewDrag(e) {
+    if (typeof e.clientX !== 'undefined') {
+        startX = e.clientX
+    } else if (typeof e.touches !== 'undefined') {
+        startX = e.touches[0].clientX
+    } else {
+        return
+    }
+    startWidth = parseInt(document.defaultView.getComputedStyle(QID('preview-panel')).width, 10)
+    document.documentElement.addEventListener('mousemove', doPreviewDrag, false)
+    document.documentElement.addEventListener('touchmove', doPreviewDrag, false)
+    document.documentElement.addEventListener('mouseup', stopPreviewDrag, false)
+    document.documentElement.addEventListener('touchend', stopPreviewDrag, false)
+}
+
+function doPreviewDrag(e) {
+    let clientX
+    if (typeof e.clientX !== 'undefined') {
+        clientX = e.clientX
+    } else if (typeof e.touches !== 'undefined') {
+        clientX = e.touches[0].clientX
+    } else {
+        return
+    }
+    const width = startWidth - (clientX - startX)
+    QID('preview-panel').style.flexBasis = Math.min(Math.max(width, 120), 900) + 'px'
+}
+
+function stopPreviewDrag() {
+    document.documentElement.removeEventListener('mousemove', doPreviewDrag, false)
+    document.documentElement.removeEventListener('touchmove', doPreviewDrag, false)
+    document.documentElement.removeEventListener('mouseup', stopPreviewDrag, false)
+    document.documentElement.removeEventListener('touchend', stopPreviewDrag, false)
 }

@@ -30,7 +30,7 @@ export function displayOpenFile(fn) {
  */
 export function createTab(fn) {
     const tabContainer = QID("editor-tabs")
-    const terminal = QID("terminal-container")
+    const codeArea = QID("code-area")
 
     _deactivateTabs()
 
@@ -46,8 +46,8 @@ export function createTab(fn) {
         `
     )
     _addNewFileButton()
-    terminal.insertAdjacentHTML(
-        'beforebegin',
+    codeArea.insertAdjacentHTML(
+        'beforeend',
         `<div class="editor-tab-pane active" data-pane="${currentTab}"><div class="editor"></div></div>`
     )
 
