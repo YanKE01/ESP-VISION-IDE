@@ -336,6 +336,7 @@ export async function createNewEditor(editorElement, fn, content, options) {
 
     if (options.readOnly) {
         mode.push(EditorState.readOnly.of(true))
+        mode.push(EditorView.editable.of(false))
     }
 
     devInfo = options.devInfo

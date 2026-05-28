@@ -351,7 +351,7 @@ body.loaded {
     overscroll-behavior: none !important;
 }
 
-#menu-file-title, #menu-pkg-title, #menu-settings-title, #menu-tools-title {
+#menu-file-title, #menu-examples-title, #menu-settings-title, #menu-tools-title {
     font-weight: bold;
 }
 
@@ -360,14 +360,14 @@ body.loaded {
     line-height: 1.2em;
 }
 
-#menu-file-tree .tree-row {
+.tree-row {
     display: flex;
     align-items: center;
     margin: 3px 0;
     line-height: 1.4em;
 }
 
-#menu-file-tree .tree-row .name {
+.tree-row .name {
     flex: 1 1 auto;
     min-width: 0;
     text-overflow: ellipsis;
@@ -375,7 +375,7 @@ body.loaded {
     white-space: nowrap;
 }
 
-#menu-file-tree .tree-row .size {
+.tree-row .size {
     flex: 0 0 auto;
     margin-left: 8px;
     font-size: 0.72rem;
@@ -383,7 +383,7 @@ body.loaded {
     white-space: nowrap;
 }
 
-#menu-file-tree .tree-row .menu-action {
+.tree-row .menu-action {
     flex: 0 0 auto;
     float: none;
     margin-left: 6px;
@@ -391,28 +391,28 @@ body.loaded {
     opacity: 0.5;
 }
 
-#menu-file-tree .folder-row {
+.folder-row {
     cursor: pointer;
 }
 
-#menu-file-tree .caret,
-#menu-file-tree .caret-spacer {
+.caret,
+.caret-spacer {
     display: inline-block;
     width: 0.9em;
     text-align: center;
 }
 
-#menu-file-tree .folder-row .caret::before {
+.folder-row .caret::before {
     content: '\25be';
     font-size: 0.85em;
     opacity: 0.6;
 }
 
-#menu-file-tree .tree-folder.collapsed > .folder-row .caret::before {
+.tree-folder.collapsed > .folder-row .caret::before {
     content: '\25b8';
 }
 
-#menu-file-tree .tree-folder.collapsed > .tree-children {
+.tree-folder.collapsed > .tree-children {
     display: none;
 }
 

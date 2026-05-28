@@ -28,6 +28,7 @@
             <div class="tabs" id="menu-tabs">
                 <div>
                     <a class="tab active" data-target="menu-files"><i class="fa-solid fa-folder fa-fw"></i></a>
+                    <a class="tab" data-target="menu-examples"><i class="fa-solid fa-book fa-fw"></i></a>
                 </div>
                 <div>
                     <a class="tab" data-target="menu-settings"><i class="fa-solid fa-sliders fa-fw"></i></a>
@@ -46,6 +47,10 @@
                         <a href="#" class="menu-action" title="Connect" onclick="app.connectDevice('usb');return false;"><i class="fa-solid fa-plug"></i></a>
                     </div>
                 </div>
+            </div>
+            <div id="menu-examples" class="tab-content">
+                <div id="menu-examples-title">Examples</div>
+                <div id="menu-examples-tree"></div>
             </div>
             <div id="menu-settings" class="tab-content">
                 <div id="menu-settings-title">Settings</div>

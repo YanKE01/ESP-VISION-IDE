@@ -29,6 +29,7 @@ import { MpRawMode } from './rawmode.js'
 import { getPkgIndexes, rawInstallPkg } from './package_mgr.js'
 import { ConnectionUID } from './connection_uid.js'
 import translations from '../build/translations.json'
+import examples from '../build/examples.json'
 import { parseStackTrace, validatePython, disassembleMPY, minifyPython, prettifyPython } from './python_utils.js'
 import { MicroPythonWASM } from './emulator.js'
 
@@ -44,7 +45,7 @@ import { faUsb, faBluetoothB } from '@fortawesome/free-brands-svg-icons'
 import { faLink, faBars, faDownload, faCirclePlay, faCircleStop, faFolder, faFile, faFileCircleExclamation, faCubes, faGear,
          faCube, faTools, faSliders, faCircleInfo, faStar, faExpand, faCertificate,
          faPlug, faArrowUpRightFromSquare, faTerminal, faBug, faGaugeHigh,
-         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark
+         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark, faBook
        } from '@fortawesome/free-solid-svg-icons'
 import { faMessage, faCircleDown } from '@fortawesome/free-regular-svg-icons'
 
@@ -52,7 +53,7 @@ library.add(faUsb, faBluetoothB)
 library.add(faLink, faBars, faDownload, faCirclePlay, faCircleStop, faFolder, faFile, faFileCircleExclamation, faCubes, faGear,
          faCube, faTools, faSliders, faCircleInfo, faStar, faExpand, faCertificate,
          faPlug, faArrowUpRightFromSquare, faTerminal, faBug, faGaugeHigh,
-         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark)
+         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark, faBook)
 library.add(faMessage, faCircleDown)
 dom.watch()
 
@@ -460,6 +461,53 @@ function _resetFileTree() {
     </div>`
 }
 
+const _exampleCode = {}
+function _flattenExamples(items, prefix) {
+    for (const it of items) {
+        const path = prefix ? `${prefix}/${it.name}` : it.name
+        if (it.children) {
+            _flattenExamples(it.children, path)
+        } else {
+            _exampleCode[path] = it.code
+        }
+    }
+}
+_flattenExamples(examples, '')
+
+export function buildExamplesTree() {
+    function render(items, depth, prefix) {
+        let html = ''
+        for (const it of items) {
+            const path = prefix ? `${prefix}/${it.name}` : it.name
+            const pad = `padding-left:${depth * 1.2}em`
+            if (it.children) {
+                html += `<div class="tree-folder">
+                    <div class="tree-row folder-row" style="${pad}" onclick="app.toggleFolder(this)">
+                        <span class="folder name"><span class="caret"></span><i class="fa-solid fa-folder fa-fw"></i> ${it.name}</span>
+                    </div>
+                    <div class="tree-children">${render(it.children, depth + 1, path)}</div>
+                </div>`
+            } else {
+                html += `<div class="tree-row" style="${pad}">
+                    <a href="#" class="name" onclick="app.exampleClick('${path}');return false;"><span class="caret-spacer"></span><i class="fa-solid fa-file fa-fw"></i> ${it.name}</a>
+                </div>`
+            }
+        }
+        return html
+    }
+    QID('menu-examples-tree').innerHTML = render(examples, 1, '')
+}
+
+export async function exampleClick(path) {
+    const code = _exampleCode[path]
+    if (code === undefined) return
+    const fn = path.split('/').pop()
+    if (!displayOpenFile(fn)) {
+        await _loadContent(fn, code, createTab(fn), { readOnly: true })
+    }
+    autoHideSideMenu()
+}
+
 async function _raw_updateFileTree(raw) {
     let fs_stats = [null, null, null];
     try {
@@ -560,7 +608,7 @@ async function _raw_loadFile(raw, fn) {
     await _loadContent(fn, content, createTab(fn))
 }
 
-async function _loadContent(fn, content, editorElement) {
+async function _loadContent(fn, content, editorElement, options = {}) {
     const willDisasm = fn.endsWith('.mpy') && QID('advanced-mode').checked
 
     if (content instanceof Uint8Array && !willDisasm) {
@@ -570,7 +618,7 @@ async function _loadContent(fn, content, editorElement) {
         editorElement.innerHTML = `<div class="marked-viewer">` + marked(content) + `</div>`
         editor = null
     } else {
-        let readOnly = false
+        let readOnly = options.readOnly || false
         if (fn.endsWith('.json') && QID('expand-minify-json').checked) {
             try {
                 // Prettify JSON
@@ -1081,6 +1129,8 @@ export function applyTranslation() {
 
     setupTabs(QID('side-menu'))
     setupTabs(QID('terminal-container'))
+
+    buildExamplesTree()
 
     toastr.options.preventDuplicates = true;
 

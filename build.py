@@ -23,6 +23,19 @@ def gen_translations(src, dst):
     with open(dst, 'w', encoding='utf-8') as f:
         json.dump(result, f, separators=(',',':'), ensure_ascii=False, sort_keys=True)
 
+def gen_examples(src, dst):
+    def walk(d):
+        items = []
+        for name in sorted(os.listdir(d)):
+            full = os.path.join(d, name)
+            if os.path.isdir(full):
+                items.append({"name": name, "children": walk(full)})
+            elif name.endswith('.py'):
+                items.append({"name": name, "code": readfile(full)})
+        return items
+    with open(dst, 'w', encoding='utf-8') as f:
+        json.dump(walk(src), f, separators=(',',':'), ensure_ascii=False)
+
 def gen_manifest(src, dst):
     pkg = json.loads(readfile('package.json'))
     result = json.loads(readfile(src))
@@ -86,6 +99,7 @@ if __name__ == "__main__":
     cp("./src/webrepl_content.js", "./build/webrepl_content.js")
     copytree("./assets", "./build/assets", dirs_exist_ok=True)
     gen_translations("./src/lang/", "build/translations.json")
+    gen_examples("./examples", "build/examples.json")
     gen_manifest("./src/manifest.json", "build/manifest.json")
 
     download_and_extract("https://github.com/dflook/python-minifier/archive/refs/tags/3.1.1.zip",
