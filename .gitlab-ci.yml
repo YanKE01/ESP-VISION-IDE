@@ -1,0 +1,100 @@
+---
+stages:
+  - build
+  - deploy
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_FORCE_HTTPS: "true"
+
+
+# Login to the GitLab Container Registry
+.docker_login_to_container_registry: &docker_login_to_container_registry |
+  unset DOCKER_AUTH_CONFIG
+  echo ${CI_JOB_TOKEN} | docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} --password-stdin
+
+.docker_build_template:
+  tags: [build, internet, amd64]
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: ['']
+  stage: build
+  script:
+    - mkdir -p /kaniko/.docker
+    - export DOCKER_AUTH_CONFIG=$(echo -n "$CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD" | base64 | awk '{print "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"" $0 "\"}}}"}')
+    - echo "${DOCKER_AUTH_CONFIG}" > /kaniko/.docker/config.json
+    - export KANIKO_CACHE_ARGS="--cache=true --cache-ttl=720h"
+    - export TAG_LIST="--destination=${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}"
+    - |
+      if [ "${CI_COMMIT_BRANCH}" == "${CI_DEFAULT_BRANCH}" ]; then
+        export TAG_LIST="${TAG_LIST} --destination=${CI_REGISTRY_IMAGE}:latest"
+      fi
+    - /kaniko/executor --context ./ --dockerfile ./Dockerfile ${KANIKO_CACHE_ARGS} ${TAG_LIST}
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # Run when merged to the default branch or on direct push
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" # Run on merge request events
+
+build_docker_image:
+  extends: .docker_build_template
+
+
+.deploy_template:
+  image: docker:latest
+  stage: deploy
+  tags:
+    - appserver
+  variables:
+    DOCKER_IMAGE: '${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}'
+  script:
+    - *docker_login_to_container_registry
+    - docker compose -p ${PROJECT_NAME} up -d
+
+## Review deployment
+deploy_review:
+  extends: .deploy_template
+  environment:
+    name: review/${CI_COMMIT_REF_NAME}
+    url: https://${CI_PROJECT_NAME}-${CI_ENVIRONMENT_SLUG}.${REVIEW_BASE_DOMAIN}/
+    auto_stop_in: 3 days
+    on_stop: stop_review
+  before_script:
+    - export PROJECT_NAME=${CI_PROJECT_NAME}-${CI_ENVIRONMENT_SLUG}
+    - export DOMAIN=${CI_PROJECT_NAME}-${CI_ENVIRONMENT_SLUG}.${REVIEW_BASE_DOMAIN}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web" && $CI_COMMIT_BRANCH # Run manually from the GitLab UI
+      when: manual
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" # Run manually on merge request
+      when: manual
+
+stop_review:
+  extends: .deploy_template
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  environment:
+    name: review/${CI_COMMIT_REF_NAME}
+    action: stop
+  rules:
+    - if: $CI_MERGE_REQUEST_EVENT_TYPE == "merged"
+      when: on_success
+    - if: $CI_MERGE_REQUEST_EVENT_TYPE == "close"
+      when: on_success
+    - when: manual
+  script:
+    - *docker_login_to_container_registry
+    - docker compose -p ${CI_PROJECT_NAME}-${CI_ENVIRONMENT_SLUG} down -v --remove-orphans
+
+## Production deployment
+deploy:
+  extends: .deploy_template
+  environment:
+    name: production
+    url: https://${BASE_DOMAIN}
+  before_script:
+    - export PROJECT_NAME=${CI_PROJECT_NAME}
+    - export DOMAIN=${BASE_DOMAIN}
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # Run when merged to the default branch or on direct push
+    - if: '$ALLOW_PRODUCTION_DEPLOY == "1"'
+      when: manual
+  when: on_success

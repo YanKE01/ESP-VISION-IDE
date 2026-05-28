@@ -1,0 +1,11 @@
+.git
+node_modules
+build
+.venv
+.parcel-cache
+__pycache__
+*.pyc
+fw
+extra
+.claude
+src/tools_vfs/lib/python_minifier

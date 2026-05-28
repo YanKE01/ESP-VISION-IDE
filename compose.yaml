@@ -1,0 +1,29 @@
+---
+services:
+  app:
+    # The docker image is set by CI to the freshly built image
+    image: ${DOCKER_IMAGE?Please provide docker image}
+
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+    # all services must be attached to the traefik network
+    networks:
+      - traefik
+
+    expose:
+      # nginx port inside the container
+      - '80'
+
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${PROJECT_NAME}-https.rule=Host(`${DOMAIN?}`)
+      - traefik.http.routers.${PROJECT_NAME}-https.entrypoints=web-secure
+      - traefik.http.routers.${PROJECT_NAME}-https.tls=true
+      - traefik.http.routers.${PROJECT_NAME}-https.tls.certresolver=le
+      - traefik.http.services.${PROJECT_NAME}.loadbalancer.server.port=80
+
+networks:
+  traefik:
+    external: true
