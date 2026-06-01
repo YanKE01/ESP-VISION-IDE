@@ -36,6 +36,12 @@ def gen_examples(src, dst):
     with open(dst, 'w', encoding='utf-8') as f:
         json.dump(walk(src), f, separators=(',',':'), ensure_ascii=False)
 
+def gen_changelog(src, dst):
+    with open(src, encoding='utf-8') as f:
+        content = f.read()
+    with open(dst, 'w', encoding='utf-8') as f:
+        json.dump({"content": content}, f, separators=(',',':'), ensure_ascii=False)
+
 def gen_stubs(src, dst):
     # Parse esp-vision .pyi stubs into completion data for the editor.
     # Docs use Sphinx-style "#:" comments, so they are collected line-by-line
@@ -189,6 +195,7 @@ if __name__ == "__main__":
     gen_translations("./src/lang/", "build/translations.json")
     gen_examples("./examples", "build/examples.json")
     gen_stubs("./stubs", "build/stubs.json")
+    gen_changelog("./CHANGELOG.md", "build/changelog.json")
     gen_manifest("./src/manifest.json", "build/manifest.json")
 
     download_and_extract("https://github.com/dflook/python-minifier/archive/refs/tags/3.1.1.zip",

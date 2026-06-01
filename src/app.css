@@ -681,8 +681,38 @@ body.loaded {
     overscroll-behavior: none !important;
 }
 
-#menu-file-title, #menu-examples-title, #menu-settings-title, #menu-tools-title {
+#menu-file-title, #menu-examples-title, #menu-settings-title, #menu-tools-title, #menu-changelog-title {
     font-weight: bold;
+}
+
+#changelog-version {
+    margin: 6px 0 14px;
+    opacity: 0.6;
+    font-size: 0.85em;
+}
+#changelog-body h1 {
+    /* The panel already has a "Changelog" title; hide the Markdown H1 to avoid duplication. */
+    display: none;
+}
+#changelog-body h2 {
+    font-size: 1.05em;
+    margin: 18px 0 6px;
+}
+#changelog-body h3 {
+    font-size: 0.9em;
+    margin: 12px 0 4px;
+    opacity: 0.8;
+}
+#changelog-body ul {
+    margin: 4px 0;
+    padding-left: 18px;
+}
+#changelog-body li {
+    margin: 4px 0;
+    line-height: 1.4em;
+}
+#changelog-body a {
+    color: var(--accent);
 }
 
 #menu-file-tree div, #menu-pkg-list div, #menu-settings-list div, #menu-tools-list div {

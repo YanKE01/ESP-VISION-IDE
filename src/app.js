@@ -33,6 +33,7 @@ import { getPkgIndexes, rawInstallPkg } from './package_mgr.js'
 import { ConnectionUID } from './connection_uid.js'
 import translations from '../build/translations.json'
 import examples from '../build/examples.json'
+import changelog from '../build/changelog.json'
 import { parseStackTrace, validatePython, disassembleMPY, minifyPython, prettifyPython } from './python_utils.js'
 import { MicroPythonWASM } from './emulator.js'
 
@@ -48,7 +49,7 @@ import { faUsb, faBluetoothB } from '@fortawesome/free-brands-svg-icons'
 import { faLink, faBars, faDownload, faCirclePlay, faCircleStop, faFolder, faFile, faFileCircleExclamation, faCubes, faGear,
          faCube, faTools, faSliders, faCircleInfo, faStar, faExpand, faCertificate,
          faPlug, faArrowUpRightFromSquare, faTerminal, faBug, faGaugeHigh,
-         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark, faBook, faEyeDropper, faCamera, faQrcode, faTableCells
+         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark, faBook, faEyeDropper, faCamera, faQrcode, faTableCells, faClockRotateLeft
        } from '@fortawesome/free-solid-svg-icons'
 import { faMessage, faCircleDown } from '@fortawesome/free-regular-svg-icons'
 
@@ -56,7 +57,7 @@ library.add(faUsb, faBluetoothB)
 library.add(faLink, faBars, faDownload, faCirclePlay, faCircleStop, faFolder, faFile, faFileCircleExclamation, faCubes, faGear,
          faCube, faTools, faSliders, faCircleInfo, faStar, faExpand, faCertificate,
          faPlug, faArrowUpRightFromSquare, faTerminal, faBug, faGaugeHigh,
-         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark, faBook, faEyeDropper, faCamera, faQrcode, faTableCells)
+         faTrashCan, faArrowsRotate, faPowerOff, faPlus, faXmark, faBook, faEyeDropper, faCamera, faQrcode, faTableCells, faClockRotateLeft)
 library.add(faMessage, faCircleDown)
 dom.watch()
 
@@ -1155,6 +1156,9 @@ export function applyTranslation() {
     setupTabs(QID('terminal-container'))
 
     buildExamplesTree()
+
+    QID('changelog-version').innerText = `Version ${VIPER_IDE_VERSION} · build ${getBuildDate()}`
+    QID('changelog-body').innerHTML = marked(changelog.content)
 
     toastr.options.preventDuplicates = true;
 
