@@ -62,7 +62,10 @@ export function createTab(fn) {
         _closeTab(editorTabElement.dataset.tab)
     }
     closeButton.addEventListener("click", close_tab)
-    editorTabElement.addEventListener("auxclick", close_tab)
+    editorTabElement.addEventListener("auxclick", (event) => {
+        // Middle-click closes the tab; ignore right-click (which also fires auxclick)
+        if (event.button === 1) close_tab(event)
+    })
 
     const editorTabTitle = editorTabElement.querySelector(".tab-title")
     editorTabTitle.textContent = fn.split("/").pop()
