@@ -510,7 +510,11 @@ export async function exampleClick(path) {
     if (code === undefined) return
     const fn = path.split('/').pop()
     if (!displayOpenFile(fn)) {
-        await _loadContent(fn, code, createTab(fn), { readOnly: true })
+        // Open the example as an editable, unsaved draft (not bound to a flash file).
+        // It can be edited and run as-is; saving prompts for a device path.
+        await _loadContent(fn, code, createTab(fn))
+        const tab = QS('#editor-tabs .tab.active')
+        if (tab) tab.dataset.draft = '1'
     }
     autoHideSideMenu()
 }
@@ -648,7 +652,9 @@ async function _loadContent(fn, content, editorElement, options = {}) {
         document.dispatchEvent(new CustomEvent("editorLoaded", {detail: {editor: editor, fn: fn}}))
         addUpdateHandler(editor, (update) => {
             if (update.docChanged) {
-                QS(`#menu-file-tree [data-fn="${fn}"]`).classList.add("changed")
+                // The file may be a draft (e.g. an example) with no file-tree entry.
+                const treeItem = QS(`#menu-file-tree [data-fn="${fn}"]`)
+                if (treeItem) treeItem.classList.add("changed")
             }
         })
 
@@ -671,6 +677,17 @@ export async function saveCurrentFile() {
         if (fn == null || fn == '') return
         editorFn = fn
         document.dispatchEvent(new CustomEvent("fileRenamed", {detail: {old: "Untitled", new: fn}}))
+    } else {
+        // A draft (e.g. an example) is not yet bound to a flash file: ask where to save it.
+        const activeTab = QS('#editor-tabs .tab.active')
+        if (activeTab && activeTab.dataset.draft) {
+            const oldFn = editorFn
+            const fn = prompt(`Save to device\nPlease enter the full path:`, '/' + editorFn)
+            if (fn == null || fn == '') return
+            editorFn = fn
+            delete activeTab.dataset.draft
+            document.dispatchEvent(new CustomEvent("fileRenamed", {detail: {old: oldFn, new: fn}}))
+        }
     }
 
     let content = editor.state.doc.toString()
