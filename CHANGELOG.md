@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 — 2026-06-02
+
+### Added
+
+- Open and edit plain-text (.txt) files, in addition to Python.
+
 ## 1.0.0 — 2026-06-01
 
 First ESP-VISION-IDE release: ViperIDE adapted into the web host tool for esp-vision camera devices.

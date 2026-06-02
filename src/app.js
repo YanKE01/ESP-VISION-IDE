@@ -557,8 +557,8 @@ export function fileTreeSelect(fn) {
 export async function fileClick(fn) {
     if (!port) return;
 
-    if (fn !== '~sysinfo.md' && !fn.endsWith('.py')) {
-        toastr.info('Only Python (.py) files can be opened')
+    if (fn !== '~sysinfo.md' && !fn.endsWith('.py') && !fn.endsWith('.txt')) {
+        toastr.info('Only Python (.py) and text (.txt) files can be opened')
         return
     }
 
