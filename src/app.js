@@ -775,8 +775,11 @@ export async function runCurrentFile() {
             const backtrace = parseStackTrace(err.message)
             if (backtrace) {
                 console.log(backtrace)
+                toastr.error(sanitizeHTML(backtrace.summary), backtrace.type)
+            } else {
+                // Not a Python traceback (e.g. the device was lost mid-run): show it as-is.
+                toastr.error(sanitizeHTML(err.message))
             }
-            toastr.error(sanitizeHTML(backtrace.summary), backtrace.type)
             return
         }
     } finally {

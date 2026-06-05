@@ -8,6 +8,8 @@
 
 import { sleep } from "./utils"
 
+const STREAM_EXEC_BUFFER_LIMIT = 8192
+
 export class MpRawMode {
     constructor(port) {
         this.port = port
@@ -88,10 +90,20 @@ export class MpRawMode {
             throw new Error(status)
         }
         this.port.emit = emit
+        this.port.emitBufferLimit = emit ? STREAM_EXEC_BUFFER_LIMIT : 0
         if (emit) {
-            this.port.prevRecvCbk(this.port.receivedData)
+            const pending = this.port.receivedData
+            if (pending.length && this.port.prevRecvCbk) {
+                this.port.prevRecvCbk(pending)
+                this.port.transactionForwarded = true
+                this.port.receivedData = ''
+            }
         }
         const res = (await this.port.readUntil('\x04', timeout)).slice(0, -1)
+        if (emit) {
+            this.port.emit = false
+            this.port.emitBufferLimit = 0
+        }
         const err = (await this.port.readUntil('\x04', timeout)).slice(0, -1)
 
         if (err.length) {

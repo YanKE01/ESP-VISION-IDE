@@ -21,6 +21,9 @@ export class Transport {
         this.disconnectCallback = () => {}
         this.writeChunk = 128
         this.emit = false
+        this.emitBufferLimit = 0
+        this.transactionForwarded = false
+        this.rxCounter = 0
         this.info = {}
         this.disconnected = false
     }
@@ -81,18 +84,33 @@ export class Transport {
         this.prevRecvCbk = this.receiveCallback
         this.inTransaction = true
         this.receivedData = ''
+        this.transactionForwarded = false
+        this.rxCounter = 0
         this.receiveCallback = (data) => {
             this.receivedData += data
-            if (this.emit && this.prevRecvCbk) { this.prevRecvCbk(data) }
+            this.rxCounter += data.length
+            if (this.emitBufferLimit > 0 && this.receivedData.length > this.emitBufferLimit) {
+                this.receivedData = this.receivedData.slice(-this.emitBufferLimit)
+            }
+            if (this.emit && this.prevRecvCbk) {
+                this.prevRecvCbk(data)
+                this.transactionForwarded = true
+            }
         }
 
         return () => {
+            const pending = this.receivedData || ''
             if (this.prevRecvCbk) {
                 this.receiveCallback = this.prevRecvCbk
-                this.receiveCallback(this.receivedData)
+                if (!this.transactionForwarded && pending.length) {
+                    this.receiveCallback(pending)
+                }
             }
             this.receivedData = null
             this.inTransaction = false
+            this.emit = false
+            this.emitBufferLimit = 0
+            this.transactionForwarded = false
 
             release()
         }
@@ -103,6 +121,7 @@ export class Transport {
             throw new Error('Not in transaction')
         }
         this.receivedData = ''
+        this.rxCounter = 0
         /*while (1) {
             const { value, done } = await reader.read()
             console.log(value, done)
@@ -125,9 +144,9 @@ export class Transport {
                 this.receivedData = this.receivedData.substring(n)
                 return res
             }
-            const prev_avail = this.receivedData.length
+            const prev_rx = this.rxCounter
             await sleep(10)
-            if (this.receivedData.length > prev_avail) {
+            if (this.rxCounter > prev_rx) {
                 endTime = Date.now() + timeout
             }
         }
@@ -149,9 +168,9 @@ export class Transport {
                 this.receivedData = this.receivedData.substring(idx)
                 return res
             }
-            const prev_avail = this.receivedData.length
+            const prev_rx = this.rxCounter
             await sleep(10)
-            if (this.receivedData.length > prev_avail) {
+            if (this.rxCounter > prev_rx) {
                 endTime = Date.now() + timeout
             }
         }
@@ -193,7 +212,10 @@ export class WebSerial extends Transport {
     }
 
     async connect() {
-        await this.port.open({ baudRate: 115200 })
+        // A large read buffer is essential for high-throughput preview streaming:
+        // the default is only 255 bytes, which overflows under EVFRAME data and makes
+        // Windows drop the device ("The device has been lost").
+        await this.port.open({ baudRate: 115200, bufferSize: 256 * 1024 })
 
         const decoderStream = new TextDecoderStream()
         this.readableStreamClosed = this.port.readable.pipeTo(decoderStream.writable)
