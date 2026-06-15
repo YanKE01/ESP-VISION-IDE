@@ -23,18 +23,65 @@ def gen_translations(src, dst):
     with open(dst, 'w', encoding='utf-8') as f:
         json.dump(result, f, separators=(',',':'), ensure_ascii=False, sort_keys=True)
 
-def gen_examples(src, dst):
-    def walk(d):
+def http_get(url, attempts=4):
+    # GitHub occasionally returns transient gateway errors (502/503/504) or times
+    # out, which would otherwise abort the whole build. Retry with backoff.
+    last = None
+    for i in range(attempts):
+        try:
+            r = requests.get(url, timeout=30)
+            if r.status_code in (502, 503, 504):
+                raise requests.exceptions.HTTPError(f"{r.status_code} transient error", response=r)
+            r.raise_for_status()
+            return r
+        except (requests.exceptions.RequestException,) as e:
+            last = e
+            if i < attempts - 1:
+                wait = 2 ** i
+                print(f"  retry {i + 1}/{attempts - 1} after {wait}s ({e})")
+                time.sleep(wait)
+    raise last
+
+def gen_examples(dst):
+    # Examples are not kept in this repo; they are mirrored at build time from the
+    # public esp-vision repository (the single source of truth). Set the env var
+    # ESP_VISION_EXAMPLES_REF to pin a branch or tag (default: master).
+    repo = 'espressif/esp-vision'
+    src_dir = 'example'
+    ref = os.environ.get('ESP_VISION_EXAMPLES_REF', 'master')
+
+    print(f"Fetching examples from {repo}@{ref} ...")
+    data = http_get(f'https://api.github.com/repos/{repo}/git/trees/{ref}?recursive=1').json()
+    if data.get('truncated'):
+        raise Exception("GitHub tree response was truncated; cannot mirror examples reliably")
+    paths = [n['path'] for n in data['tree']
+             if n['type'] == 'blob' and n['path'].startswith(src_dir + '/') and n['path'].endswith('.py')]
+    if not paths:
+        raise Exception(f"No .py examples found under {src_dir}/ in {repo}@{ref}")
+
+    # Fetch each file's source and rebuild the nested tree from its path.
+    root = {}
+    for p in sorted(paths):
+        rel = p[len(src_dir) + 1:]
+        raw = http_get(f'https://raw.githubusercontent.com/{repo}/{ref}/{p}')
+        node = root
+        for part in rel.split('/')[:-1]:
+            node = node.setdefault(part, {})
+        node[rel.split('/')[-1]] = raw.text
+
+    def to_items(node):
         items = []
-        for name in sorted(os.listdir(d)):
-            full = os.path.join(d, name)
-            if os.path.isdir(full):
-                items.append({"name": name, "children": walk(full)})
-            elif name.endswith('.py'):
-                items.append({"name": name, "code": readfile(full)})
+        for name in sorted(node):
+            val = node[name]
+            if isinstance(val, dict):
+                items.append({"name": name, "children": to_items(val)})
+            else:
+                items.append({"name": name, "code": val})
         return items
+
+    print(f"Bundled {len(paths)} examples")
     with open(dst, 'w', encoding='utf-8') as f:
-        json.dump(walk(src), f, separators=(',',':'), ensure_ascii=False)
+        json.dump(to_items(root), f, separators=(',',':'), ensure_ascii=False)
 
 def gen_changelog(src, dst):
     with open(src, encoding='utf-8') as f:
@@ -193,7 +240,7 @@ if __name__ == "__main__":
     cp("./src/webrepl_content.js", "./build/webrepl_content.js")
     copytree("./assets", "./build/assets", dirs_exist_ok=True)
     gen_translations("./src/lang/", "build/translations.json")
-    gen_examples("./examples", "build/examples.json")
+    gen_examples("build/examples.json")
     gen_stubs("./stubs", "build/stubs.json")
     gen_changelog("./CHANGELOG.md", "build/changelog.json")
     gen_manifest("./src/manifest.json", "build/manifest.json")
