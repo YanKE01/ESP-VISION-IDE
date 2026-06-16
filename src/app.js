@@ -1034,20 +1034,13 @@ export function applyTranslation() {
         QS('label[for=lang]').innerText = T('settings.lang')
         QS('label[for=zoom]').innerText = T('settings.zoom')
 
-        QS('#about-cta').innerHTML = T('about.cta')
-        QS('#report-bug').innerHTML = T('about.report-bug')
+        QS('#about-cta-esp').innerHTML = T('about.cta-esp')
     } catch (err) {
         report("Error", err)
     }
 
-    QSA('a[id=gh-star]').forEach(el => {
-        el.setAttribute('href', 'https://github.com/vshymanskyy/ViperIDE')
-        el.setAttribute('target', '_blank')
-        el.classList.add('link')
-    })
-
-    QSA('a[id=gh-issues]').forEach(el => {
-        el.setAttribute('href', 'https://github.com/vshymanskyy/ViperIDE/issues')
+    QSA('a[id=evs-star]').forEach(el => {
+        el.setAttribute('href', 'https://github.com/espressif/esp-vision')
         el.setAttribute('target', '_blank')
         el.classList.add('link')
     })

@@ -12,9 +12,9 @@ const log = console.log.bind(console).bind(console, `[Service Worker ${VIPER_IDE
 
 const contentToCache = new Set([
     '/index.html',
-    '/assets/favicon.png',
+    '/assets/esp-vision.svg',
     '/assets/app_1024.png',
-    '/assets/logo_1024.png',
+    '/assets/esp_vision_about.svg',
     '/assets/mpy-cross-v6.wasm',
     '/assets/micropython.wasm',
     '/assets/ruff_wasm_bg.wasm',

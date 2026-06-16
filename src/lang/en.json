@@ -42,7 +42,8 @@
         },
         "about": {
             "cta": "If you like ViperIDE, please <a id='gh-star'>give it a GitHub star</a> ⭐ and spread the word on social media 📢",
-            "report-bug": "You can also <a id='gh-issues'>report a bug</a> 🐞"
+            "report-bug": "You can also <a id='gh-issues'>report a bug</a> 🐞",
+            "cta-esp": "If you like the <a id='evs-star'>esp-vision</a> project, give it a GitHub star ⭐"
         }
     }
 }

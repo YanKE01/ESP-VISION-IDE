@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Link to the [esp-vision](https://github.com/espressif/esp-vision) project repository on the About page.
+
+### Changed
+
+- Refreshed ESP-VISION branding: new About-page logo and browser tab icon.
+- Examples are now synced from the [esp-vision](https://github.com/espressif/esp-vision) repository at build time, keeping them in step with the latest published samples.
+
 ## 1.1.0 — 2026-06-02
 
 ### Added
